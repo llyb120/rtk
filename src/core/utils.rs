@@ -365,6 +365,19 @@ pub fn resolve_binary(name: &str) -> Result<PathBuf> {
     which::which(name).context(format!("Binary '{}' not found on PATH", name))
 }
 
+/// Apply Nova's no-window process policy to a child command.
+///
+/// RTK often launches console applications while running inside Nova's GUI
+/// process. Without this flag Windows allocates a visible console for them.
+pub(crate) fn apply_no_window(command: &mut Command) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+}
+
 /// Create a `Command` with PATHEXT-aware binary resolution.
 ///
 /// Drop-in replacement for `Command::new(name)` that works on Windows
@@ -377,9 +390,9 @@ pub fn resolve_binary(name: &str) -> Result<PathBuf> {
 /// * `name` - Binary name (e.g., "vitest", "eslint")
 ///
 /// # Returns
-/// A `Command` configured with the resolved binary path.
+/// A command configured with the resolved binary path.
 pub fn resolved_command(name: &str) -> Command {
-    match resolve_binary(name) {
+    let mut command = match resolve_binary(name) {
         Ok(path) => Command::new(path),
         Err(e) => {
             // On Windows, resolution failure likely means a .CMD/.BAT wrapper
@@ -394,7 +407,9 @@ pub fn resolved_command(name: &str) -> Command {
 
             Command::new(name)
         }
-    }
+    };
+    apply_no_window(&mut command);
+    command
 }
 
 /// Return Composer bin directories in precedence order.

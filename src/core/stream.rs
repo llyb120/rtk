@@ -275,6 +275,7 @@ pub fn run_streaming(
     stdin_mode: StdinMode,
     stdout_mode: FilterMode<'_>,
 ) -> Result<StreamResult> {
+    crate::core::utils::apply_no_window(cmd);
     if matches!(stdout_mode, FilterMode::Passthrough) {
         match &stdin_mode {
             StdinMode::Inherit => {
@@ -555,6 +556,7 @@ impl CaptureResult {
 }
 
 pub fn exec_capture(cmd: &mut Command) -> Result<CaptureResult> {
+    crate::core::utils::apply_no_window(cmd);
     cmd.stdin(Stdio::null());
     let output = cmd.output().context("Failed to execute command")?;
     Ok(CaptureResult {
@@ -566,6 +568,7 @@ pub fn exec_capture(cmd: &mut Command) -> Result<CaptureResult> {
 
 /// Like [`exec_capture`] but inherits stdin so a wrapped engine can read a piped stdin.
 pub fn exec_capture_stdin(cmd: &mut Command) -> Result<CaptureResult> {
+    crate::core::utils::apply_no_window(cmd);
     cmd.stdin(Stdio::inherit());
     let output = cmd.output().context("Failed to execute command")?;
     Ok(CaptureResult {
