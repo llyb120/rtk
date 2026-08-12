@@ -369,14 +369,15 @@ pub fn resolve_binary(name: &str) -> Result<PathBuf> {
 ///
 /// RTK often launches console applications while running inside Nova's GUI
 /// process. Without this flag Windows allocates a visible console for them.
+#[cfg(windows)]
 pub(crate) fn apply_no_window(command: &mut Command) {
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-        command.creation_flags(CREATE_NO_WINDOW);
-    }
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    command.creation_flags(CREATE_NO_WINDOW);
 }
+
+#[cfg(not(windows))]
+pub(crate) fn apply_no_window(_: &mut Command) {}
 
 /// Create a `Command` with PATHEXT-aware binary resolution.
 ///
