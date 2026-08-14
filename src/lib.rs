@@ -1580,7 +1580,7 @@ where
 }
 
 fn run_cli() -> Result<i32> {
-    run_cli_from(std::env::args_os())
+    run_cli_from(std::env::args_os(), true)
 }
 
 pub fn run_embedded<I, T>(args: I) -> i32
@@ -1588,7 +1588,7 @@ where
     I: IntoIterator<Item = T>,
     T: Into<OsString> + Clone,
 {
-    match run_cli_from(args) {
+    match run_cli_from(args, false) {
         Ok(code) => code,
         Err(error) => {
             eprintln!("rtk: {error:#}");
@@ -1601,7 +1601,7 @@ pub fn rewrite_command(command: &str) -> Option<String> {
     crate::discover::registry::rewrite_command(command, &[], &[])
 }
 
-fn run_cli_from<I, T>(args: I) -> Result<i32>
+fn run_cli_from<I, T>(args: I, warn_hook: bool) -> Result<i32>
 where
     I: IntoIterator<Item = T>,
     T: Into<OsString> + Clone,
@@ -1619,9 +1619,10 @@ where
         }
     };
 
-    // Warn if installed hook is outdated/missing (1/day, non-blocking).
+    // Standalone RTK warns about missing hooks; embedded hosts already manage rewriting
+    // internally, so surfacing this warning only pollutes their tool output/context.
     // Skip for Gain — it shows its own inline hook warning.
-    if !matches!(cli.command, Commands::Gain { .. }) {
+    if warn_hook && !matches!(cli.command, Commands::Gain { .. }) {
         hooks::hook_check::maybe_warn();
     }
 
