@@ -1,5 +1,8 @@
 //! Optional usage ping so we know which commands people run most.
 
+// Without `telemetry` the ping is a no-op; salt/marker helpers stay for `rtk telemetry`.
+#![cfg_attr(not(feature = "telemetry"), allow(unused_imports))]
+
 use super::constants::RTK_DATA_DIR;
 use crate::core::config;
 use crate::core::tracking;
@@ -68,6 +71,12 @@ pub fn maybe_ping() {
     });
 }
 
+#[cfg(not(feature = "telemetry"))]
+fn send_ping() -> Result<(), Box<dyn std::error::Error>> {
+    Ok(())
+}
+
+#[cfg(feature = "telemetry")]
 fn send_ping() -> Result<(), Box<dyn std::error::Error>> {
     let url = TELEMETRY_URL.ok_or("no telemetry URL")?;
     let device_hash = generate_device_hash();
@@ -212,6 +221,7 @@ pub fn salt_file_path() -> PathBuf {
         .join(".device_salt")
 }
 
+#[cfg(feature = "telemetry")]
 fn get_stats(tracker: &tracking::Tracker) -> (i64, Vec<String>, Option<f64>, i64, i64) {
     let since_24h = chrono::Utc::now() - chrono::Duration::hours(24);
 
@@ -230,6 +240,7 @@ fn get_stats(tracker: &tracking::Tracker) -> (i64, Vec<String>, Option<f64>, i64
     )
 }
 
+#[cfg(feature = "telemetry")]
 struct EnrichedStats {
     // Quality: identify gaps and weak filters
     passthrough_top: Vec<String>,
@@ -256,6 +267,7 @@ struct EnrichedStats {
     meta_usage: serde_json::Value,
 }
 
+#[cfg(feature = "telemetry")]
 fn get_enriched_stats(tracker: &tracking::Tracker) -> EnrichedStats {
     let since_24h = chrono::Utc::now() - chrono::Duration::hours(24);
 
@@ -320,6 +332,7 @@ fn get_enriched_stats(tracker: &tracking::Tracker) -> EnrichedStats {
 }
 
 /// Build meta-command usage counts (gain, discover, proxy, verify, learn, init).
+#[cfg(feature = "telemetry")]
 fn build_meta_usage(tracker: &tracking::Tracker) -> serde_json::Value {
     let meta_cmds = ["gain", "discover", "proxy", "verify", "learn", "init"];
     let mut usage = serde_json::Map::new();
@@ -549,6 +562,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "telemetry")]
     #[test]
     fn test_get_stats_returns_tuple() {
         let tracker = match tracking::Tracker::new() {
@@ -565,6 +579,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "telemetry")]
     #[test]
     fn test_enriched_stats_returns_valid_data() {
         let tracker = match tracking::Tracker::new() {

@@ -1,3 +1,6 @@
+// Stats/ping-only helpers are unreachable in slim builds (e.g. embedded in Nova); `telemetry` implies `tracking`.
+#![cfg_attr(not(feature = "telemetry"), allow(dead_code))]
+
 mod analytics;
 mod cmds;
 mod core;

@@ -172,6 +172,12 @@ fn run_forget() -> Result<()> {
     Ok(())
 }
 
+#[cfg(not(feature = "telemetry"))]
+fn send_erasure_request(_device_hash: &str) -> Result<()> {
+    anyhow::bail!("telemetry is not compiled into this build")
+}
+
+#[cfg(feature = "telemetry")]
 fn send_erasure_request(device_hash: &str) -> Result<()> {
     let url = option_env!("RTK_TELEMETRY_URL");
     let url = match url {

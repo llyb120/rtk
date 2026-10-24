@@ -12,6 +12,13 @@ readme = "README.md"
 keywords = ["cli", "llm", "token", "filter", "productivity"]
 categories = ["command-line-utilities", "development-tools"]
 
+[features]
+default = ["tracking", "telemetry"]
+# SQLite history behind `rtk gain` / `rtk cc-economics`. Embedders that never show stats can drop it.
+tracking = ["dep:rusqlite"]
+# Network ping and erasure request (still requires RTK_TELEMETRY_URL at build time).
+telemetry = ["tracking", "dep:ureq"]
+
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 anyhow = "1.0"
@@ -22,12 +29,12 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 colored = "3"
 dirs = "5"
-rusqlite = { version = "0.31", features = ["bundled"] }
+rusqlite = { version = "0.31", features = ["bundled"], optional = true }
 toml = "0.8"
 chrono = "0.4"
 tempfile = "3"
 sha2 = "0.10"
-ureq = "2"
+ureq = { version = "2", optional = true }
 getrandom = "0.4"
 flate2 = "1.0"
 quick-xml = "0.37"

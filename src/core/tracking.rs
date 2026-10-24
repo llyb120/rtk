@@ -29,8 +29,12 @@
 //!
 //! See [docs/tracking.md](../docs/tracking.md) for full documentation.
 
+// Without `tracking`, recording is a no-op and only path/token helpers remain.
+#![cfg_attr(not(feature = "tracking"), allow(unused_imports, unused_variables))]
+
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
+#[cfg(feature = "tracking")]
 use rusqlite::{params, Connection};
 use serde::Serialize;
 use std::ffi::OsString;
@@ -88,6 +92,7 @@ use super::constants::{DEFAULT_HISTORY_DAYS, HISTORY_DB, RTK_DATA_DIR};
 /// println!("Total saved: {} tokens", summary.total_saved);
 /// # Ok::<(), anyhow::Error>(())
 /// ```
+#[cfg(feature = "tracking")]
 pub struct Tracker {
     conn: Connection,
 }
@@ -223,6 +228,7 @@ pub struct MonthStats {
 /// Type alias for command statistics tuple: (command, count, saved_tokens, avg_savings_pct, avg_time_ms)
 type CommandStats = (String, usize, usize, f64, u64);
 
+#[cfg(feature = "tracking")]
 impl Tracker {
     /// Create a new tracker instance.
     ///
@@ -1293,6 +1299,7 @@ pub struct ParseFailureSummary {
 /// Record a parse failure without ever crashing.
 /// Silently ignores all errors — used in the fallback path.
 pub fn record_parse_failure_silent(raw_command: &str, error_message: &str, succeeded: bool) {
+    #[cfg(feature = "tracking")]
     if let Ok(tracker) = Tracker::new() {
         let _ = tracker.record_parse_failure(raw_command, error_message, succeeded);
     }
@@ -1394,6 +1401,7 @@ impl TimedExecution {
         let input_tokens = estimate_tokens(input);
         let output_tokens = estimate_tokens(output);
 
+        #[cfg(feature = "tracking")]
         if let Ok(tracker) = Tracker::new() {
             let _ = tracker.record(
                 original_cmd,
@@ -1428,6 +1436,7 @@ impl TimedExecution {
     pub fn track_passthrough(&self, original_cmd: &str, rtk_cmd: &str) {
         let elapsed_ms = self.start.elapsed().as_millis() as u64;
         // input_tokens=0, output_tokens=0 won't dilute savings statistics
+        #[cfg(feature = "tracking")]
         if let Ok(tracker) = Tracker::new() {
             let _ = tracker.record(original_cmd, rtk_cmd, 0, 0, elapsed_ms);
         }
@@ -1455,7 +1464,7 @@ pub fn args_display(args: &[OsString]) -> String {
         .join(" ")
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "tracking"))]
 mod tests {
     use super::*;
 
